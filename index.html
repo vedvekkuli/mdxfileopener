@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marker — Universal Markdown Previewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Light theme (default) */
+            --bg-base: #faf9f7;
+            --bg-elevated: #ffffff;
+            --bg-recessed: #f0efec;
+            --bg-hover: #e8e6e1;
+            --bg-active: #dddbd5;
+
+            --border-subtle: rgba(0, 0, 0, 0.06);
+            --border-default: rgba(0, 0, 0, 0.12);
+            --border-strong: rgba(0, 0, 0, 0.2);
+
+            --text-primary: #1a1a1a;
+            --text-secondary: #5c5c5c;
+            --text-tertiary: #8c8c8c;
+            --text-inverse: #faf9f7;
+
+            --accent-primary: #d64527;
+            --accent-secondary: #b83a20;
+            --accent-tertiary: #ff6b4a;
+            --accent-bg: rgba(214, 69, 39, 0.08);
+            --accent-bg-strong: rgba(214, 69, 39, 0.15);
+
+            --success: #2d8a4e;
+            --success-bg: rgba(45, 138, 78, 0.1);
+
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+            --shadow-xl: 0 24px 80px rgba(0, 0, 0, 0.16);
+
+            --font-display: 'Fraunces', Georgia, serif;
+            --font-body: 'DM Sans', system-ui, sans-serif;
+            --font-mono: 'IBM Plex Mono', monospace;
+
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+        }
+
+        [data-theme="dark"] {
+            --bg-base: #121212;
+            --bg-elevated: #1a1a1a;
+            --bg-recessed: #0a0a0a;
+            --bg-hover: #242424;
+            --bg-active: #2e2e2e;
+
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-default: rgba(255, 255, 255, 0.1);
+            --border-strong: rgba(255, 255, 255, 0.18);
+
+            --text-primary: #f5f5f5;
+            --text-secondary: #a0a0a0;
+            --text-tertiary: #6a6a6a;
+            --text-inverse: #1a1a1a;
+
+            --accent-primary: #ff6b4a;
+            --accent-secondary: #ff8266;
+            --accent-tertiary: #ff9980;
+            --accent-bg: rgba(255, 107, 74, 0.12);
+            --accent-bg-strong: rgba(255, 107, 74, 0.2);
+
+            --success: #4ade80;
+            --success-bg: rgba(74, 222, 128, 0.15);
+
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.4);
+            --shadow-xl: 0 24px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-base);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            transition: background 0.4s ease, color 0.3s ease;
+        }
+
+        /* Subtle grid pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--border-subtle) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+            background-size: 60px 60px;
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-base) 60%, transparent);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .logo-mark {
+            width: 38px;
+            height: 38px;
+            background: var(--accent-primary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s var(--ease-out-back);
+        }
+
+        .logo:hover .logo-mark {
+            transform: rotate(-5deg) scale(1.05);
+        }
+
+        .logo-mark::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+        }
+
+        .logo-mark svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-text {
+            font-family: var(--font-display);
+            font-size: 1.375rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-strong);
+        }
+
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-secondary);
+            transition: transform 0.4s var(--ease-out-back), opacity 0.2s ease;
+            position: absolute;
+        }
+
+        .theme-toggle .sun-icon {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+        }
+
+        .theme-toggle .moon-icon {
+            opacity: 0;
+            transform: rotate(-90deg) scale(0.5);
+        }
+
+        [data-theme="dark"] .theme-toggle .sun-icon {
+            opacity: 0;
+            transform: rotate(90deg) scale(0.5);
+        }
+
+        [data-theme="dark"] .theme-toggle .moon-icon {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+        }
+
+        .nav-cta {
+            background: var(--text-primary);
+            color: var(--text-inverse) !important;
+            padding: 0.625rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-weight: 500 !important;
+            transition: transform 0.2s var(--ease-out-back), box-shadow 0.2s ease !important;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 5.5rem 2rem 3rem;
+            position: relative;
+            text-align: center;
+        }
+
+        /* Decorative elements */
+        .hero-decoration {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .hero-decoration-1 {
+            top: 5%;
+            left: 5%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, var(--accent-bg-strong) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(50px);
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .hero-decoration-2 {
+            top: 30%;
+            right: 5%;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, var(--success-bg) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: float 10s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, -20px); }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            padding: 0.375rem 0.875rem 0.375rem 0.5rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            animation: fadeSlideUp 0.8s var(--ease-out-expo) backwards;
+        }
+
+        .hero-badge-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--success-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-badge-icon svg {
+            width: 12px;
+            height: 12px;
+            color: var(--success);
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(1.75rem, 5vw, 2.75rem);
+            font-weight: 400;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            max-width: 600px;
+            margin-bottom: 0.75rem;
+            animation: fadeSlideUp 0.8s var(--ease-out-expo) 0.1s backwards;
+        }
+
+        .hero h1 .highlight {
+            color: var(--accent-primary);
+            font-style: italic;
+            position: relative;
+        }
+
+        .hero h1 .highlight::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0.05em;
+            height: 0.1em;
+            background: var(--accent-primary);
+            opacity: 0.3;
+            border-radius: 2px;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            max-width: 480px;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            animation: fadeSlideUp 0.8s var(--ease-out-expo) 0.2s backwards;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            animation: fadeSlideUp 0.8s var(--ease-out-expo) 0.3s backwards;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.625rem;
+            padding: 0.875rem 1.75rem;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            font-size: 0.9375rem;
+            text-decoration: none;
+            transition: all 0.2s var(--ease-out-back);
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-body);
+        }
+
+        .btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(214, 69, 39, 0.25);
+        }
+
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-strong);
+            transform: translateY(-2px);
+        }
+
+        /* Hero Action Area - Drop Zone with Buttons */
+        .hero-action-area {
+            width: 100%;
+            max-width: 520px;
+            margin-top: 0;
+            animation: fadeSlideUp 0.8s var(--ease-out-expo) 0.3s backwards;
+        }
+
+        .drop-zone {
+            position: relative;
+            border: 2px dashed var(--border-default);
+            border-radius: var(--radius-xl);
+            padding: 1.75rem 1.5rem 1.5rem;
+            text-align: center;
+            transition: all 0.3s var(--ease-out-expo);
+            background: var(--bg-elevated);
+            box-shadow: var(--shadow-md);
+        }
+
+        .drop-zone::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: var(--radius-xl);
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+
+        .drop-zone.drag-over {
+            border-color: transparent;
+            transform: scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .drop-zone.drag-over::before {
+            opacity: 1;
+        }
+
+        .drop-zone-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        .drop-zone-icon {
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 0.75rem;
+            background: var(--accent-bg);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s var(--ease-out-back), background 0.3s ease;
+        }
+
+        .drop-zone.drag-over .drop-zone-icon {
+            transform: scale(1.1) rotate(-5deg);
+            background: var(--accent-bg-strong);
+        }
+
+        .drop-zone-icon svg {
+            width: 24px;
+            height: 24px;
+            color: var(--accent-primary);
+        }
+
+        .drop-zone h3 {
+            font-family: var(--font-display);
+            font-size: 1.125rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .drop-zone > .drop-zone-inner > p {
+            color: var(--text-tertiary);
+            font-size: 0.8125rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .drop-zone-buttons {
+            display: flex;
+            gap: 0.625rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .drop-zone-buttons .btn {
+            padding: 0.625rem 1.25rem;
+            font-size: 0.875rem;
+        }
+
+        /* Floating file type badges */
+        .file-type-badge {
+            position: absolute;
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            padding: 0.375rem 0.625rem;
+            border-radius: var(--radius-sm);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            box-shadow: var(--shadow-md);
+            z-index: 5;
+            animation: floatBadge 3s ease-in-out infinite;
+        }
+
+        .badge-mdx {
+            top: -8px;
+            left: 12%;
+            background: linear-gradient(135deg, var(--accent-bg-strong), var(--accent-bg));
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            animation-delay: 0s;
+        }
+
+        .badge-md {
+            top: 20%;
+            right: -12px;
+            animation-delay: 0.5s;
+        }
+
+        .badge-txt {
+            bottom: 20%;
+            left: -10px;
+            animation-delay: 1s;
+        }
+
+        .badge-rst {
+            bottom: -8px;
+            right: 15%;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes floatBadge {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* Formats row below drop zone */
+        .formats-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .format-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            padding: 0.375rem 0.625rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .format-pill:hover {
+            border-color: var(--accent-primary);
+            background: var(--accent-bg);
+        }
+
+        .format-pill .format-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--bg-recessed);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.5625rem;
+            font-weight: 600;
+            color: var(--text-tertiary);
+        }
+
+        .format-pill:hover .format-icon {
+            background: var(--accent-bg-strong);
+            color: var(--accent-primary);
+        }
+
+        .format-pill span:last-child {
+            font-family: var(--font-mono);
+            font-weight: 500;
+        }
+
+        .format-more-text {
+            font-size: 0.6875rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 8rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--accent-primary);
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 800px) {
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .feature-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            transition: all 0.3s var(--ease-out-expo);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-tertiary));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--border-default);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--accent-bg);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .feature-icon svg {
+            width: 22px;
+            height: 22px;
+            color: var(--accent-primary);
+        }
+
+        .feature-card h3 {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            line-height: 1.6;
+        }
+
+        /* Editor Preview Section */
+        .preview-section {
+            padding: 4rem 2rem 8rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .editor-window {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .editor-titlebar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.875rem 1.25rem;
+            background: var(--bg-recessed);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .editor-dots {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .editor-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .editor-dot:nth-child(1) { background: #ff5f57; }
+        .editor-dot:nth-child(2) { background: #febc2e; }
+        .editor-dot:nth-child(3) { background: #28c840; }
+
+        .editor-tabs {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .editor-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .editor-tab.active {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .editor-tab .file-ext {
+            padding: 0.125rem 0.375rem;
+            background: var(--accent-bg);
+            color: var(--accent-primary);
+            border-radius: 3px;
+            font-size: 0.6875rem;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .editor-action-btn {
+            background: var(--bg-hover);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 0.375rem 0.75rem;
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .editor-action-btn:hover {
+            background: var(--bg-active);
+            color: var(--text-primary);
+        }
+
+        .editor-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 420px;
+        }
+
+        @media (max-width: 768px) {
+            .editor-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .editor-pane {
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .editor-pane:first-child {
+            border-right: 1px solid var(--border-subtle);
+            background: var(--bg-recessed);
+        }
+
+        .pane-label {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-tertiary);
+            background: var(--bg-hover);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .code-content {
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            line-height: 1.9;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+        }
+
+        .code-content .comment { color: var(--text-tertiary); }
+        .code-content .heading { color: var(--accent-primary); font-weight: 500; }
+        .code-content .bold { color: var(--text-primary); }
+        .code-content .tag { color: #e879f9; }
+        .code-content .attr { color: #fbbf24; }
+        .code-content .string { color: var(--success); }
+
+        .preview-content {
+            font-size: 0.9375rem;
+            line-height: 1.75;
+        }
+
+        .preview-content h1 {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        .preview-content p {
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+        }
+
+        .preview-content .component-preview {
+            background: var(--accent-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            margin: 1.25rem 0;
+        }
+
+        .preview-content .component-label {
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .preview-content .demo-btn {
+            background: var(--accent-primary);
+            color: white;
+            padding: 0.625rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 4rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .footer-content {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .footer-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer-logo .logo-mark {
+            width: 32px;
+            height: 32px;
+        }
+
+        .footer-logo .logo-mark svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .footer-text {
+            color: var(--text-tertiary);
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-primary);
+        }
+
+        /* Hidden input */
+        #file-input {
+            display: none;
+        }
+
+        /* ============================================
+           APP VIEW (EDITOR)
+           ============================================ */
+
+        .app-container {
+            display: none;
+            min-height: 100vh;
+            flex-direction: column;
+            background: var(--bg-base);
+        }
+
+        .app-container.active {
+            display: flex;
+        }
+
+        .landing-page.hidden {
+            display: none;
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.25rem;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border-subtle);
+            gap: 1rem;
+        }
+
+        .app-file-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+        }
+
+        .app-logo {
+            flex-shrink: 0;
+        }
+
+        .app-logo .logo-mark {
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+        }
+
+        .app-logo .logo-mark svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .app-file-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-recessed);
+            padding: 0.375rem 0.75rem;
+            border-radius: var(--radius-sm);
+            min-width: 0;
+        }
+
+        .app-file-ext {
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            font-weight: 500;
+            padding: 0.125rem 0.375rem;
+            background: var(--accent-bg);
+            color: var(--accent-primary);
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .app-file-name {
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .app-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .toolbar-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-recessed);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem 0.875rem;
+            font-family: var(--font-body);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-default);
+            color: var(--text-primary);
+        }
+
+        .toolbar-btn.active {
+            background: var(--accent-bg);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .toolbar-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-subtle);
+            margin: 0 0.25rem;
+        }
+
+        .app-main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+        }
+
+        .app-main.preview-only {
+            grid-template-columns: 1fr;
+        }
+
+        .app-main.preview-only .source-pane {
+            display: none;
+        }
+
+        .app-main.source-only {
+            grid-template-columns: 1fr;
+        }
+
+        .app-main.source-only .preview-pane {
+            display: none;
+        }
+
+        .source-pane,
+        .preview-pane {
+            overflow: auto;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .source-pane {
+            background: var(--bg-recessed);
+            border-right: 1px solid var(--border-subtle);
+        }
+
+        .preview-pane {
+            background: var(--bg-elevated);
+        }
+
+        .pane-header-bar {
+            position: sticky;
+            top: 0;
+            background: inherit;
+            padding: 0.625rem 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-tertiary);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #source-editor {
+            flex: 1;
+            width: 100%;
+            background: transparent;
+            border: none;
+            resize: none;
+            padding: 1.25rem;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        #source-editor::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        #preview-output {
+            flex: 1;
+            padding: 1.5rem 2rem;
+            font-size: 1rem;
+            line-height: 1.8;
+            max-width: 720px;
+        }
+
+        #preview-output h1 {
+            font-family: var(--font-display);
+            font-size: 2.25rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        #preview-output h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin: 2rem 0 0.75rem;
+            letter-spacing: -0.01em;
+        }
+
+        #preview-output h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.5rem;
+        }
+
+        #preview-output p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        #preview-output strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        #preview-output em {
+            font-style: italic;
+        }
+
+        #preview-output code {
+            font-family: var(--font-mono);
+            background: var(--bg-recessed);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            font-size: 0.875em;
+            color: var(--accent-primary);
+        }
+
+        #preview-output pre {
+            background: var(--bg-recessed);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            overflow-x: auto;
+            margin: 1.25rem 0;
+        }
+
+        #preview-output pre code {
+            background: none;
+            padding: 0;
+            color: var(--text-primary);
+            font-size: 0.8125rem;
+            line-height: 1.7;
+        }
+
+        #preview-output ul,
+        #preview-output ol {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        #preview-output li {
+            margin-bottom: 0.375rem;
+        }
+
+        #preview-output li::marker {
+            color: var(--accent-primary);
+        }
+
+        #preview-output blockquote {
+            border-left: 3px solid var(--accent-primary);
+            padding: 0.5rem 0 0.5rem 1.25rem;
+            margin: 1.25rem 0;
+            color: var(--text-secondary);
+            font-style: italic;
+            background: var(--accent-bg);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        }
+
+        #preview-output a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s ease;
+        }
+
+        #preview-output a:hover {
+            border-bottom-color: var(--accent-primary);
+        }
+
+        #preview-output hr {
+            border: none;
+            border-top: 1px solid var(--border-default);
+            margin: 2rem 0;
+        }
+
+        #preview-output table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.25rem 0;
+            font-size: 0.9375rem;
+        }
+
+        #preview-output th,
+        #preview-output td {
+            padding: 0.625rem 0.875rem;
+            border: 1px solid var(--border-subtle);
+            text-align: left;
+        }
+
+        #preview-output th {
+            background: var(--bg-recessed);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        #preview-output td {
+            color: var(--text-secondary);
+        }
+
+        #preview-output img {
+            max-width: 100%;
+            border-radius: var(--radius-md);
+            margin: 1rem 0;
+        }
+
+        /* MDX Component styling */
+        .mdx-component {
+            background: var(--accent-bg);
+            border: 1px dashed var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+        }
+
+        .mdx-component-label {
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .mdx-component-label::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+        }
+
+        .mdx-component-children {
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-sm);
+            font-size: 0.9375rem;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            nav {
+                padding: 0.875rem 1rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .hero {
+                padding: 5rem 1rem 2rem;
+            }
+
+            .hero h1 {
+                font-size: 1.5rem;
+            }
+
+            .hero-action-area {
+                max-width: 100%;
+            }
+
+            .drop-zone {
+                padding: 1.5rem 1rem 1.25rem;
+            }
+
+            .drop-zone-buttons {
+                flex-direction: column;
+            }
+
+            .drop-zone-buttons .btn {
+                width: 100%;
+            }
+
+            .file-type-badge {
+                display: none;
+            }
+
+            .formats-row {
+                gap: 0.375rem;
+            }
+
+            .format-pill {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.6875rem;
+            }
+
+            .format-pill .format-icon {
+                width: 16px;
+                height: 16px;
+                font-size: 0.5rem;
+            }
+
+            .editor-content {
+                grid-template-columns: 1fr;
+            }
+
+            .editor-pane:first-child {
+                border-right: none;
+                border-bottom: 1px solid var(--border-subtle);
+            }
+
+            .app-header {
+                flex-wrap: wrap;
+            }
+
+            .app-toolbar {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .app-main {
+                grid-template-columns: 1fr;
+            }
+
+            .source-pane {
+                display: none;
+            }
+
+            .app-main.show-source .source-pane {
+                display: flex;
+            }
+
+            .app-main.show-source .preview-pane {
+                display: none;
+            }
+
+            .toolbar-btn span {
+                display: none;
+            }
+        }
+
+        /* Empty state */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Landing Page -->
+    <div class="landing-page" id="landing-page">
+        <nav>
+            <a href="#" class="logo">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16v16H4z"/>
+                        <path d="M8 8h8"/>
+                        <path d="M8 12h6"/>
+                        <path d="M8 16h4"/>
+                    </svg>
+                </div>
+                <span class="logo-text">Marker</span>
+            </a>
+            <div class="nav-right">
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#preview">Preview</a>
+                    <a href="https://github.com" target="_blank">GitHub</a>
+                </div>
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"/>
+                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                    </svg>
+                    <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <a href="#" class="nav-links nav-cta" id="nav-open-btn">Open file</a>
+            </div>
+        </nav>
+
+        <!-- Decorations -->
+        <div class="hero-decoration hero-decoration-1"></div>
+        <div class="hero-decoration hero-decoration-2"></div>
+
+        <section class="hero">
+            <div class="hero-badge">
+                <div class="hero-badge-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="20,6 9,17 4,12"/>
+                    </svg>
+                </div>
+                100% free & private — files never leave your browser
+            </div>
+
+            <h1>Preview any <span class="highlight">Markdown</span> file instantly</h1>
+
+            <p class="hero-subtitle">
+                Drop your MDX, Markdown, or text files and see them beautifully rendered. Edit live, export anywhere.
+            </p>
+
+            <!-- Primary action area - Drop zone with buttons -->
+            <div class="hero-action-area">
+                <div class="drop-zone" id="drop-zone">
+                    <!-- Floating file type badges -->
+                    <div class="file-type-badge badge-mdx">.mdx</div>
+                    <div class="file-type-badge badge-md">.md</div>
+                    <div class="file-type-badge badge-txt">.txt</div>
+                    <div class="file-type-badge badge-rst">.rst</div>
+
+                    <div class="drop-zone-inner">
+                        <div class="drop-zone-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="12" y1="18" x2="12" y2="12"/>
+                                <line x1="9" y1="15" x2="15" y2="15"/>
+                            </svg>
+                        </div>
+                        <h3>Drop your file here</h3>
+                        <p>or</p>
+                        <div class="drop-zone-buttons">
+                            <button class="btn btn-primary" id="open-file-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17,8 12,3 7,8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                Choose a file
+                            </button>
+                            <button class="btn btn-secondary" id="try-demo-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="5,3 19,12 5,21 5,3"/>
+                                </svg>
+                                Try demo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Supported formats row -->
+                <div class="formats-row">
+                    <div class="format-pill">
+                        <span class="format-icon">M↓</span>
+                        <span>.mdx</span>
+                    </div>
+                    <div class="format-pill">
+                        <span class="format-icon">M↓</span>
+                        <span>.md</span>
+                    </div>
+                    <div class="format-pill">
+                        <span class="format-icon">Tx</span>
+                        <span>.txt</span>
+                    </div>
+                    <div class="format-pill">
+                        <span class="format-icon">Rs</span>
+                        <span>.rst</span>
+                    </div>
+                    <div class="format-pill">
+                        <span class="format-icon">Ad</span>
+                        <span>.adoc</span>
+                    </div>
+                    <span class="format-more-text">+5 more</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="features" id="features">
+            <div class="section-header">
+                <span class="section-eyebrow">Features</span>
+                <h2 class="section-title">Everything you need for Markdown</h2>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                    </div>
+                    <h3>Live preview</h3>
+                    <p>See your changes rendered instantly as you type in the split editor view.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h3>MDX components</h3>
+                    <p>JSX components are visualized with labeled previews showing structure and props.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                    </div>
+                    <h3>100% private</h3>
+                    <p>Files are processed entirely in your browser. Nothing is uploaded anywhere.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M2 12h20"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </div>
+                    <h3>Works offline</h3>
+                    <p>Once loaded, the app works without internet. Perfect for working on the go.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7,10 12,15 17,10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                    </div>
+                    <h3>Export options</h3>
+                    <p>Download your edited file as MDX, Markdown, or copy rendered HTML.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M3 9h18"/>
+                            <path d="M9 21V9"/>
+                        </svg>
+                    </div>
+                    <h3>Flexible views</h3>
+                    <p>Split view, preview only, or source only — work the way you prefer.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="preview-section" id="preview">
+            <div class="section-header">
+                <span class="section-eyebrow">How it works</span>
+                <h2 class="section-title">Write, preview, export</h2>
+            </div>
+
+            <div class="editor-window">
+                <div class="editor-titlebar">
+                    <div class="editor-dots">
+                        <span class="editor-dot"></span>
+                        <span class="editor-dot"></span>
+                        <span class="editor-dot"></span>
+                    </div>
+                    <div class="editor-tabs">
+                        <button class="editor-tab active">
+                            readme.mdx
+                            <span class="file-ext">MDX</span>
+                        </button>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="editor-action-btn">Export</button>
+                    </div>
+                </div>
+                <div class="editor-content">
+                    <div class="editor-pane">
+                        <span class="pane-label">Source</span>
+                        <div class="code-content"><span class="heading"># Getting Started</span>
+
+Welcome to the docs! This is written in <span class="bold">**MDX**</span>.
+
+<span class="tag">&lt;Callout</span> <span class="attr">type</span>=<span class="string">"info"</span><span class="tag">&gt;</span>
+  MDX lets you use JSX in your markdown.
+<span class="tag">&lt;/Callout&gt;</span>
+
+<span class="heading">## Features</span>
+
+- Live preview as you type
+- Full MDX support
+- Export to multiple formats</div>
+                    </div>
+                    <div class="editor-pane">
+                        <span class="pane-label">Preview</span>
+                        <div class="preview-content">
+                            <h1>Getting Started</h1>
+                            <p>Welcome to the docs! This is written in <strong>MDX</strong>.</p>
+                            <div class="component-preview">
+                                <div class="component-label">&lt;Callout type="info"&gt;</div>
+                                <p style="margin: 0; color: var(--text-secondary);">MDX lets you use JSX in your markdown.</p>
+                            </div>
+                            <h2 style="font-family: var(--font-display); font-size: 1.25rem; margin: 1.5rem 0 0.5rem;">Features</h2>
+                            <ul style="color: var(--text-secondary); padding-left: 1.25rem;">
+                                <li>Live preview as you type</li>
+                                <li>Full MDX support</li>
+                                <li>Export to multiple formats</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <div class="logo-mark">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16v16H4z"/>
+                            <path d="M8 8h8"/>
+                            <path d="M8 12h6"/>
+                            <path d="M8 16h4"/>
+                        </svg>
+                    </div>
+                    <span class="logo-text" style="font-family: var(--font-display); font-size: 1.125rem;">Marker</span>
+                </div>
+                <p class="footer-text">A free, privacy-first Markdown previewer for developers and writers.</p>
+                <div class="footer-links">
+                    <a href="https://github.com" target="_blank">GitHub</a>
+                    <a href="#">Privacy</a>
+                    <a href="#">About</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- App Container (Editor View) -->
+    <div class="app-container" id="app-container">
+        <header class="app-header">
+            <div class="app-file-info">
+                <div class="app-logo">
+                    <div class="logo-mark" id="back-to-home" title="Back to home">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16v16H4z"/>
+                            <path d="M8 8h8"/>
+                            <path d="M8 12h6"/>
+                            <path d="M8 16h4"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="app-file-badge">
+                    <span class="app-file-ext" id="app-file-ext">MDX</span>
+                    <span class="app-file-name" id="app-filename">untitled.mdx</span>
+                </div>
+            </div>
+            <div class="app-toolbar">
+                <button class="toolbar-btn" id="btn-source" title="Source only">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16,18 22,12 16,6"/>
+                        <polyline points="8,6 2,12 8,18"/>
+                    </svg>
+                    <span>Source</span>
+                </button>
+                <button class="toolbar-btn active" id="btn-split" title="Split view">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <line x1="12" y1="3" x2="12" y2="21"/>
+                    </svg>
+                    <span>Split</span>
+                </button>
+                <button class="toolbar-btn" id="btn-preview" title="Preview only">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span>Preview</span>
+                </button>
+                <div class="toolbar-divider"></div>
+                <button class="theme-toggle" id="app-theme-toggle" aria-label="Toggle theme">
+                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"/>
+                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                    </svg>
+                    <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <button class="toolbar-btn" id="btn-download" title="Download file">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7,10 12,15 17,10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <span>Save</span>
+                </button>
+            </div>
+        </header>
+        <main class="app-main" id="app-main">
+            <div class="source-pane">
+                <div class="pane-header-bar">Source</div>
+                <textarea id="source-editor" spellcheck="false" placeholder="Start typing your markdown here..."></textarea>
+            </div>
+            <div class="preview-pane">
+                <div class="pane-header-bar">Preview</div>
+                <div id="preview-output"></div>
+            </div>
+        </main>
+    </div>
+
+    <input type="file" id="file-input" accept=".md,.mdx,.markdown,.mdown,.mkdn,.mkd,.mdwn,.txt,.text,.rst,.adoc,.asciidoc">
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // ============================================
+        // THEME MANAGEMENT
+        // ============================================
+
+        const getPreferredTheme = () => {
+            const stored = localStorage.getItem('marker-theme');
+            if (stored) return stored;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        };
+
+        const setTheme = (theme) => {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('marker-theme', theme);
+        };
+
+        const toggleTheme = () => {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        };
+
+        // Initialize theme
+        setTheme(getPreferredTheme());
+
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('marker-theme')) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+
+        // ============================================
+        // APP STATE
+        // ============================================
+
+        let currentFile = null;
+        let currentContent = '';
+
+        // DOM Elements
+        const landingPage = document.getElementById('landing-page');
+        const appContainer = document.getElementById('app-container');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const sourceEditor = document.getElementById('source-editor');
+        const previewOutput = document.getElementById('preview-output');
+        const appFilename = document.getElementById('app-filename');
+        const appFileExt = document.getElementById('app-file-ext');
+        const appMain = document.getElementById('app-main');
+
+        // Demo content
+        const demoContent = `# Welcome to Marker
+
+This is a **live preview** of your Markdown content. Edit the source on the left and watch the preview update instantly.
+
+## What is MDX?
+
+MDX lets you use JSX components directly in your Markdown. This makes it perfect for documentation, blogs, and interactive content.
+
+<Alert type="info">
+  This is a custom Alert component. In Marker, JSX components are displayed with labeled previews so you can see your document structure.
+</Alert>
+
+### Code Example
+
+Here's a JavaScript function:
+
+\`\`\`javascript
+function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+
+console.log(greet('World'));
+\`\`\`
+
+### Features
+
+- **Live preview** — See changes as you type
+- **MDX support** — JSX components are visualized
+- **Privacy first** — Files never leave your browser
+- **Dark mode** — Easy on the eyes
+
+> "The best way to write documentation is to see it as you write it."
+
+---
+
+<Button variant="primary" size="large">
+  Get Started Now
+</Button>
+
+## Tables
+
+| Format | Extension | Support |
+|--------|-----------|---------|
+| Markdown | .md | ✅ Full |
+| MDX | .mdx | ✅ Full |
+| Plain text | .txt | ✅ Full |
+| reStructuredText | .rst | 🔄 Basic |
+
+## Links and Images
+
+Check out [GitHub](https://github.com) for more open source projects.
+
+---
+
+Try editing this content to see the live preview in action!
+`;
+
+        // File extension to display name mapping
+        const extMap = {
+            'md': 'MD',
+            'mdx': 'MDX',
+            'markdown': 'MD',
+            'mdown': 'MD',
+            'mkdn': 'MD',
+            'mkd': 'MD',
+            'mdwn': 'MD',
+            'txt': 'TXT',
+            'text': 'TXT',
+            'rst': 'RST',
+            'adoc': 'ADOC',
+            'asciidoc': 'ADOC'
+        };
+
+        // ============================================
+        // MARKDOWN PARSING
+        // ============================================
+
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: false,
+            mangle: false
+        });
+
+        function parseMDXToHTML(content) {
+            let processed = content;
+
+            // Match self-closing components like <Component />
+            processed = processed.replace(/<([A-Z]\w*)([^>]*?)\/>/g, (match, name, props) => {
+                const propsStr = props.trim();
+                return `<div class="mdx-component"><div class="mdx-component-label">&lt;${name}${propsStr ? ' ' + propsStr : ''} /&gt;</div></div>`;
+            });
+
+            // Match components with children like <Component>...</Component>
+            processed = processed.replace(/<([A-Z]\w*)([^>]*)>([\s\S]*?)<\/\1>/g, (match, name, props, children) => {
+                const propsStr = props.trim();
+                const childContent = children.trim()
+                    ? `<div class="mdx-component-children">${marked.parse(children.trim())}</div>`
+                    : '';
+                return `<div class="mdx-component"><div class="mdx-component-label">&lt;${name}${propsStr ? ' ' + propsStr : ''}&gt;</div>${childContent}</div>`;
+            });
+
+            return marked.parse(processed);
+        }
+
+        function updatePreview() {
+            const content = sourceEditor.value;
+            previewOutput.innerHTML = parseMDXToHTML(content);
+        }
+
+        // ============================================
+        // VIEW MANAGEMENT
+        // ============================================
+
+        function showApp(filename, content) {
+            landingPage.classList.add('hidden');
+            appContainer.classList.add('active');
+
+            // Extract extension
+            const ext = filename.split('.').pop().toLowerCase();
+            appFileExt.textContent = extMap[ext] || ext.toUpperCase();
+            appFilename.textContent = filename;
+
+            sourceEditor.value = content;
+            currentContent = content;
+            updatePreview();
+        }
+
+        function showLanding() {
+            landingPage.classList.remove('hidden');
+            appContainer.classList.remove('active');
+            currentFile = null;
+            currentContent = '';
+        }
+
+        // ============================================
+        // FILE HANDLING
+        // ============================================
+
+        const validExtensions = ['.md', '.mdx', '.markdown', '.mdown', '.mkdn', '.mkd', '.mdwn', '.txt', '.text', '.rst', '.adoc', '.asciidoc'];
+
+        function handleFile(file) {
+            if (!file) return;
+
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+
+            if (!validExtensions.includes(ext)) {
+                alert('Please select a supported file format:\n' + validExtensions.join(', '));
+                return;
+            }
+
+            currentFile = file;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                showApp(file.name, e.target.result);
+            };
+            reader.onerror = () => {
+                alert('Error reading file. Please try again.');
+            };
+            reader.readAsText(file);
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+
+        // Theme toggles
+        document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+        document.getElementById('app-theme-toggle').addEventListener('click', toggleTheme);
+
+        // Drop zone - only trigger on the zone itself, not buttons inside
+        dropZone.addEventListener('click', (e) => {
+            // Don't trigger if clicking on buttons inside
+            if (e.target.closest('.btn')) return;
+            fileInput.click();
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        // File input
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+            e.target.value = ''; // Reset so same file can be selected again
+        });
+
+        // Open file buttons
+        document.getElementById('open-file-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+        document.getElementById('nav-open-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            fileInput.click();
+        });
+
+        // Demo button
+        document.getElementById('try-demo-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            showApp('demo.mdx', demoContent);
+        });
+
+        // Back to home
+        document.getElementById('back-to-home').addEventListener('click', (e) => {
+            e.preventDefault();
+            showLanding();
+        });
+
+        // Source editor live preview
+        sourceEditor.addEventListener('input', updatePreview);
+
+        // View toggle buttons
+        const btnSource = document.getElementById('btn-source');
+        const btnSplit = document.getElementById('btn-split');
+        const btnPreview = document.getElementById('btn-preview');
+
+        function setActiveView(mode) {
+            btnSource.classList.remove('active');
+            btnSplit.classList.remove('active');
+            btnPreview.classList.remove('active');
+
+            appMain.classList.remove('source-only', 'preview-only');
+
+            if (mode === 'source') {
+                btnSource.classList.add('active');
+                appMain.classList.add('source-only');
+            } else if (mode === 'preview') {
+                btnPreview.classList.add('active');
+                appMain.classList.add('preview-only');
+            } else {
+                btnSplit.classList.add('active');
+            }
+        }
+
+        btnSource.addEventListener('click', () => setActiveView('source'));
+        btnSplit.addEventListener('click', () => setActiveView('split'));
+        btnPreview.addEventListener('click', () => setActiveView('preview'));
+
+        // Download button
+        document.getElementById('btn-download').addEventListener('click', () => {
+            const content = sourceEditor.value;
+            const filename = appFilename.textContent || 'document.md';
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Cmd/Ctrl + O to open file
+            if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
+                e.preventDefault();
+                fileInput.click();
+            }
+            // Cmd/Ctrl + S to download
+            if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+                e.preventDefault();
+                if (appContainer.classList.contains('active')) {
+                    document.getElementById('btn-download').click();
+                }
+            }
+            // Cmd/Ctrl + 1/2/3 for views
+            if ((e.metaKey || e.ctrlKey) && appContainer.classList.contains('active')) {
+                if (e.key === '1') {
+                    e.preventDefault();
+                    setActiveView('source');
+                } else if (e.key === '2') {
+                    e.preventDefault();
+                    setActiveView('split');
+                } else if (e.key === '3') {
+                    e.preventDefault();
+                    setActiveView('preview');
+                }
+            }
+        });
+
+        // Prevent default drag behavior on window
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => e.preventDefault());
+    </script>
+</body>
+</html>
